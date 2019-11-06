@@ -2,11 +2,11 @@ package com.eaglesakura.armyknife.android.gms
 
 import androidx.lifecycle.LiveData
 import com.eaglesakura.armyknife.android.extensions.awaitInCoroutines
+import com.eaglesakura.armyknife.android.gms.GooglePlayService.coroutineScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GetTokenResult
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.util.Date
 
@@ -23,20 +23,21 @@ internal object LiveFirebaseAuthImpl : LiveData<FirebaseAuthSnapshot>() {
         super.onInactive()
     }
 
-    internal fun refresh(auth: FirebaseAuth) = GlobalScope.launch(Dispatchers.Main) {
-        value = if (auth.currentUser == null) {
-            FirebaseAuthSnapshot(
-                user = null,
-                token = null
-            )
-        } else {
-            val task = auth.getAccessToken(false).awaitInCoroutines()
-            FirebaseAuthSnapshot(
-                user = auth.currentUser,
-                token = task.result!!
-            )
+    internal fun refresh(auth: FirebaseAuth) =
+        coroutineScope.launch(Dispatchers.Main) {
+            value = if (auth.currentUser == null) {
+                FirebaseAuthSnapshot(
+                    user = null,
+                    token = null
+                )
+            } else {
+                val task = auth.getAccessToken(false).awaitInCoroutines()
+                FirebaseAuthSnapshot(
+                    user = auth.currentUser,
+                    token = task.result!!
+                )
+            }
         }
-    }
 
     private val listener = object : FirebaseAuth.AuthStateListener, FirebaseAuth.IdTokenListener {
         override fun onAuthStateChanged(auth: FirebaseAuth) {

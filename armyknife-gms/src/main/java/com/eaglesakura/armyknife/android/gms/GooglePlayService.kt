@@ -16,6 +16,9 @@ import com.google.android.gms.auth.api.Auth
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.google.android.gms.common.api.GoogleApiClient
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 
 @Suppress("unused")
 /**
@@ -31,7 +34,10 @@ object GooglePlayService {
      * @return ログイン用intent
      */
     @Throws(PlayServiceException::class)
-    suspend fun newSignInIntent(builder: GoogleApiClient.Builder, withSignOut: Boolean = true): Intent {
+    suspend fun newSignInIntent(
+        builder: GoogleApiClient.Builder,
+        withSignOut: Boolean = true
+    ): Intent {
         return builder.connect(GoogleApiClient.SIGN_IN_MODE_OPTIONAL).use { client ->
             if (withSignOut) {
                 Auth.GoogleSignInApi.signOut(client).awaitInCoroutines()
@@ -91,4 +97,6 @@ object GooglePlayService {
         intent.data = Uri.parse("market://details?id=$packageName")
         return intent
     }
+
+    internal val coroutineScope = CoroutineScope(Dispatchers.Default + Job())
 }
