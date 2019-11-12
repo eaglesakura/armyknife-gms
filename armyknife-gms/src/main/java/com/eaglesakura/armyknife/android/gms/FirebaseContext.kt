@@ -159,16 +159,16 @@ class FirebaseContext internal constructor(val context: Context) :
                 try {
                     Log.i(tag, "RemoteConfig.fetch")
                     config.fetch(remoteConfigRefreshInterval).awaitInCoroutines().also { task ->
-                        if (!task.isSuccessful) {
+                        task.exception?.also { e ->
                             Log.i(tag, "fetch failed")
-                            throw task.exception!!
+                            throw e
                         }
                     }
                     Log.i(
                         tag,
                         "RemoteConfig.activate / lastFetchStatus='${config.info.lastFetchStatus}'"
                     )
-                    config.activate().also { task ->
+                    config.activate().awaitInCoroutines().also { task ->
                         task.exception?.also { e ->
                             Log.i(tag, "activate failed")
                             throw e
