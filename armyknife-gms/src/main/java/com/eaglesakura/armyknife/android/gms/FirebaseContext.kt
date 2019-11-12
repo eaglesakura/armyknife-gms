@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit
  *  }
  */
 class FirebaseContext internal constructor(val context: Context) :
-        LiveData<FirebaseContextSnapshot>() {
+    LiveData<FirebaseContextSnapshot>() {
 
     private val tag = "FirebaseContext"
 
@@ -142,12 +142,12 @@ class FirebaseContext internal constructor(val context: Context) :
 
         Firebase.remoteConfig?.info?.lastFetchStatus
         val snapshot = FirebaseContextSnapshot(
-                user = user,
-                instanceId = instanceId,
-                userAuthToken = authToken,
-                remoteConfigValues = Firebase.remoteConfig?.all?.toMap() ?: emptyMap(),
-                remoteConfigFetchStatus = Firebase.remoteConfig?.info?.lastFetchStatus
-                        ?: FirebaseRemoteConfig.LAST_FETCH_STATUS_NO_FETCH_YET
+            user = user,
+            instanceId = instanceId,
+            userAuthToken = authToken,
+            remoteConfigValues = Firebase.remoteConfig?.all?.toMap() ?: emptyMap(),
+            remoteConfigFetchStatus = Firebase.remoteConfig?.info?.lastFetchStatus
+                ?: FirebaseRemoteConfig.LAST_FETCH_STATUS_NO_FETCH_YET
         )
         Log.i(tag, "send FirebaseContextSnapshot/${snapshot.id}/${snapshot.date}")
         this.value = snapshot
@@ -158,9 +158,17 @@ class FirebaseContext internal constructor(val context: Context) :
             while (isActive) {
                 try {
                     Log.i(tag, "sync remote configs")
-                    val task = config.fetch(remoteConfigRefreshInterval).awaitInCoroutines()
-                    if (!task.isSuccessful) {
-                        throw task.exception!!
+                    config.fetch(remoteConfigRefreshInterval).awaitInCoroutines().also { task ->
+                        if (!task.isSuccessful) {
+                            Log.i(tag, "fetch failed")
+                            throw task.exception!!
+                        }
+                    }
+                    config.activate().also { task ->
+                        if (!task.isSuccessful) {
+                            Log.i(tag, "activate failed")
+                            throw task.exception!!
+                        }
                     }
 
                     withContext(Dispatchers.Main) {
