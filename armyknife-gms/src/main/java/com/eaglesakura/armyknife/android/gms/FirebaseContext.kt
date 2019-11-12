@@ -157,22 +157,25 @@ class FirebaseContext internal constructor(val context: Context) :
         GooglePlayService.coroutineScope.launch {
             while (isActive) {
                 try {
-                    Log.i(tag, "sync remote configs")
+                    Log.i(tag, "RemoteConfig.fetch")
                     config.fetch(remoteConfigRefreshInterval).awaitInCoroutines().also { task ->
                         if (!task.isSuccessful) {
                             Log.i(tag, "fetch failed")
                             throw task.exception!!
                         }
                     }
+                    Log.i(
+                        tag,
+                        "RemoteConfig.activate / lastFetchStatus='${config.info.lastFetchStatus}'"
+                    )
                     config.activate().also { task ->
-                        if (!task.isSuccessful) {
+                        task.exception?.also { e ->
                             Log.i(tag, "activate failed")
-                            throw task.exception!!
+                            throw e
                         }
                     }
-
                     withContext(Dispatchers.Main) {
-                        Log.i(tag, "refresh remote configs")
+                        Log.i(tag, "RemoteConfig.snapshot")
                         snapshot()
                     }
                     delay(remoteConfigRefreshInterval) // refresh next 60 min later.
