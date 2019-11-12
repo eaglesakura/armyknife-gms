@@ -2,8 +2,10 @@ package com.eaglesakura.armyknife.android.gms
 
 import android.content.Context
 import android.util.Log
+import androidx.annotation.AnyThread
 import androidx.annotation.UiThread
 import androidx.lifecycle.LiveData
+import com.eaglesakura.armyknife.android.extensions.UIHandler
 import com.eaglesakura.armyknife.android.extensions.assertUIThread
 import com.eaglesakura.armyknife.android.extensions.awaitInCoroutines
 import com.eaglesakura.armyknife.android.extensions.debugMode
@@ -80,6 +82,16 @@ class FirebaseContext internal constructor(val context: Context) :
             refreshInstanceId(firebaseInstanceId)
         }
         snapshot()
+    }
+
+    /**
+     * Refresh ContextSnapshot async.
+     */
+    @AnyThread
+    fun refresh() {
+        UIHandler.post {
+            snapshot()
+        }
     }
 
     @UiThread
