@@ -219,7 +219,7 @@ class FirebaseContext internal constructor(val context: Context) :
         }
     }
 
-    private fun startAuthTokenRefreshLoop(auth: FirebaseAuth, userSnapshot: FirebaseUser) {
+    private fun startAuthTokenRefreshLoop(@Suppress("UNUSED_PARAMETER") auth: FirebaseAuth, userSnapshot: FirebaseUser) {
         authRefreshJob?.cancel()
         authRefreshJob = coroutineScope.launch {
             while (userSnapshot == this@FirebaseContext.user) {
