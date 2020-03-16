@@ -2,7 +2,9 @@ package com.eaglesakura.armyknife.android.gms
 
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.eaglesakura.armyknife.android.ApplicationRuntime
 import com.eaglesakura.armyknife.android.extensions.awaitInCoroutines
+import com.eaglesakura.armyknife.android.junit4.extensions.compatibleBlockingTest
 import com.eaglesakura.armyknife.android.junit4.extensions.instrumentationBlockingTest
 import com.eaglesakura.armyknife.android.junit4.extensions.targetApplication
 import com.eaglesakura.armyknife.android.junit4.extensions.testContext
@@ -19,7 +21,9 @@ class FirebaseContextTest {
 
     @Before
     fun before() {
-        Firebase.provideFromAssets(testContext, "google-services.json")
+        if (ApplicationRuntime.runIn(ApplicationRuntime.RUNTIME_INSTRUMENTATION)) {
+            Firebase.provideFromAssets(testContext, "google-services.json")
+        }
         Firebase.auth?.signOut()
     }
 
@@ -29,7 +33,7 @@ class FirebaseContextTest {
     }
 
     @Test
-    fun getInstance() = instrumentationBlockingTest(Dispatchers.Main) {
+    fun getInstance() = compatibleBlockingTest(Dispatchers.Main) {
         val instance = FirebaseContext.getInstance(targetApplication)
 
         // same instance.
@@ -42,8 +46,14 @@ class FirebaseContextTest {
 
         instance.observeForever { snapshot ->
             Log.d("FirebaseContextTest", "$snapshot")
-            Log.d("FirebaseContextTest", "user.token='${snapshot.userAuthToken?.token}', instance.id='${snapshot?.instanceId?.id}', instance.token='${snapshot?.instanceId?.token}'")
-            Log.d("FirebaseContextTest", "remoteconfig.status='${snapshot.remoteConfigFetchStatus}'")
+            Log.d(
+                "FirebaseContextTest",
+                "user.token='${snapshot.userAuthToken?.token}', instance.id='${snapshot?.instanceId?.id}', instance.token='${snapshot?.instanceId?.token}'"
+            )
+            Log.d(
+                "FirebaseContextTest",
+                "remoteconfig.status='${snapshot.remoteConfigFetchStatus}'"
+            )
         }
 
         Firebase.auth!!.signInAnonymously().awaitInCoroutines()

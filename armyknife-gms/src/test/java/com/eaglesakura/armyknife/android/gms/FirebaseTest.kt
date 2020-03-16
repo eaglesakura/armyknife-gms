@@ -2,8 +2,11 @@ package com.eaglesakura.armyknife.android.gms
 
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.eaglesakura.armyknife.android.ApplicationRuntime
 import com.eaglesakura.armyknife.android.extensions.awaitInCoroutines
 import com.eaglesakura.armyknife.android.junit4.extensions.instrumentationBlockingTest
+import com.eaglesakura.armyknife.android.junit4.extensions.instrumentationTest
+import com.eaglesakura.armyknife.android.junit4.extensions.localTest
 import com.eaglesakura.armyknife.android.junit4.extensions.testContext
 import com.eaglesakura.armyknife.runtime.extensions.send
 import com.google.firebase.iid.InstanceIdResult
@@ -12,6 +15,7 @@ import kotlinx.coroutines.channels.Channel
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -21,7 +25,9 @@ class FirebaseTest {
 
     @Before
     fun before() {
-        Firebase.provideFromAssets(testContext, "google-services.json")
+        if (ApplicationRuntime.runIn(ApplicationRuntime.RUNTIME_INSTRUMENTATION)) {
+            Firebase.provideFromAssets(testContext, "google-services.json")
+        }
     }
 
     @After
@@ -30,13 +36,23 @@ class FirebaseTest {
     }
 
     @Test
-    fun getInstances() {
+    fun getInstances_instrumentation() = instrumentationTest {
         assertNotNull(Firebase.app)
         assertNotNull(Firebase.auth)
         assertNotNull(Firebase.firestore)
         assertNotNull(Firebase.storage())
         assertNotNull(Firebase.instanceId)
         assertNotNull(Firebase.remoteConfig)
+    }
+
+    @Test
+    fun getInstances_robolectric() = localTest {
+        assertNull(Firebase.app)
+        assertNull(Firebase.auth)
+        assertNull(Firebase.firestore)
+        assertNull(Firebase.storage())
+        assertNull(Firebase.instanceId)
+        assertNull(Firebase.remoteConfig)
     }
 
     @Test

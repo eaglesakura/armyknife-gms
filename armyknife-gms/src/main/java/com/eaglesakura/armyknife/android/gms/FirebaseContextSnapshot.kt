@@ -1,8 +1,10 @@
 package com.eaglesakura.armyknife.android.gms
 
+import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GetTokenResult
 import com.google.firebase.iid.InstanceIdResult
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigValue
 import java.util.Date
 import java.util.concurrent.atomic.AtomicLong
@@ -51,12 +53,32 @@ class FirebaseContextSnapshot internal constructor(
      */
     val id: Long = uid.getAndIncrement()
 
+    /**
+     * Can activate remote config.
+     */
+    val canActivateRemoteConfig: Boolean
+        get() = when (remoteConfigFetchStatus) {
+            FirebaseRemoteConfig.LAST_FETCH_STATUS_SUCCESS -> true
+            else -> false
+        }
+
+    /**
+     * activate Firebase remote config when fetch successful.
+     */
+    fun activateRemoteConfigCanActivate(): Task<Boolean>? {
+        return if (canActivateRemoteConfig) {
+            Firebase.remoteConfig?.activate()
+        } else {
+            null
+        }
+    }
+
     override fun hashCode(): Int {
         return id.hashCode()
     }
 
     override fun toString(): String {
-        return "FirebaseContextSnapshot(id=$id, user='${user?.uid}', instanceId='${instanceId?.id?.hashCode()}.${instanceId?.token?.hashCode()}', userAuthToken='${userAuthToken.hashCode()}', remoteConfigValues=${remoteConfigValues.keys})"
+        return "FirebaseContextSnapshot(id=$id, user='${user?.uid}', instanceId='${instanceId?.id?.hashCode()}.${instanceId?.token?.hashCode()}', userAuthToken='${userAuthToken?.hashCode()}', remoteConfigValues=${remoteConfigValues.keys})"
     }
 
     override fun equals(other: Any?): Boolean {
