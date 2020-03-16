@@ -25,9 +25,9 @@ object Firebase {
      */
     @Suppress("MemberVisibilityCanBePrivate")
     fun provideFromAssets(context: Context, googleServicesJsonPath: String) =
-        provideFromGoogleServiceJson(context, context.assets.open(googleServicesJsonPath).use {
-            it.readBytes().toString(Charset.forName("UTF-8"))
-        })
+            provideFromGoogleServiceJson(context, context.assets.open(googleServicesJsonPath).use {
+                it.readBytes().toString(Charset.forName("UTF-8"))
+            })
 
     /**
      * for UnitTest.
@@ -75,6 +75,18 @@ object Firebase {
     }
 
     /**
+     * Linked module(firebase-core)
+     */
+    val linkAppModule: Boolean by lazy {
+        try {
+            app
+            true
+        } catch (e: Throwable) {
+            false
+        }
+    }
+
+    /**
      * Firebase instance ID
      */
     val instanceId: FirebaseInstanceId? by lazy {
@@ -82,6 +94,18 @@ object Firebase {
             FirebaseInstanceId.getInstance(app!!)
         } catch (e: Throwable) {
             null
+        }
+    }
+
+    /**
+     * Linked module(firebase-iid)
+     */
+    val linkInstanceIdModule: Boolean by lazy {
+        try {
+            instanceId
+            true
+        } catch (e: Throwable) {
+            false
         }
     }
 
@@ -94,6 +118,18 @@ object Firebase {
             FirebaseFirestore.getInstance(app!!)
         } catch (e: Throwable) {
             null
+        }
+    }
+
+    /**
+     * Linked module(firestore)
+     */
+    val linkFirestoreModule: Boolean by lazy {
+        try {
+            firestore
+            true
+        } catch (e: Throwable) {
+            false
         }
     }
 
@@ -111,6 +147,18 @@ object Firebase {
     }
 
     /**
+     * Linked module(firebase-config)
+     */
+    val linkRemoteConfigModule: Boolean by lazy {
+        try {
+            remoteConfig
+            true
+        } catch (e: Throwable) {
+            false
+        }
+    }
+
+    /**
      * Firebase auth instance.
      */
     @Suppress("MemberVisibilityCanBePrivate")
@@ -119,6 +167,18 @@ object Firebase {
             FirebaseAuth.getInstance(app!!)
         } catch (e: Throwable) {
             null
+        }
+    }
+
+    /**
+     * Linked module(firebase-auth)
+     */
+    val linkAuthModule: Boolean by lazy {
+        try {
+            auth
+            true
+        } catch (e: Throwable) {
+            false
         }
     }
 
@@ -135,6 +195,18 @@ object Firebase {
         FirebaseAnalytics.getInstance(context)
     } catch (e: Throwable) {
         null
+    }
+
+    /**
+     * Linked module(firebase-core)
+     */
+    fun linkAnalyticsModule(context: Context): Boolean {
+        return try {
+            FirebaseAnalytics.getInstance(context)
+            true
+        } catch (e: Throwable) {
+            false
+        }
     }
 
     private val lock = ReentrantLock()

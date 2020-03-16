@@ -71,29 +71,35 @@ class FirebaseContext internal constructor(val context: Context) :
     private var authRefreshJob: Job? = null
 
     init {
-        when (val auth = Firebase.auth) {
-            null -> {
+        if (Firebase.linkAuthModule && Firebase.auth != null) {
+            val auth = Firebase.auth!!
+            refreshAuth(auth)
+            auth.addAuthStateListener(FirebaseAuth.AuthStateListener { refreshAuth(it) })
+        } else {
+            if (Firebase.linkAuthModule) {
+                Log.d(tag, "no-install GMS(com.google.firebase:firebase-auth)")
+            } else {
                 Log.d(tag, "no-dependencies(com.google.firebase:firebase-auth)")
             }
-            else -> {
-                refreshAuth(auth)
-                auth.addAuthStateListener(FirebaseAuth.AuthStateListener { refreshAuth(it) })
-            }
         }
-        when (val config = Firebase.remoteConfig) {
-            null -> {
+        if (Firebase.linkRemoteConfigModule && Firebase.remoteConfig != null) {
+            val config = Firebase.remoteConfig!!
+            startConfigRefreshLoop(config)
+        } else {
+            if (Firebase.linkRemoteConfigModule) {
+                Log.d(tag, "no-install GMS(com.google.firebase:firebase-config)")
+            } else {
                 Log.d(tag, "no-dependencies(com.google.firebase:firebase-config)")
             }
-            else -> {
-                startConfigRefreshLoop(config)
-            }
         }
-        when (val firebaseInstanceId = Firebase.instanceId) {
-            null -> {
+        if (Firebase.linkInstanceIdModule && Firebase.instanceId != null) {
+            val firebaseInstanceId = Firebase.instanceId!!
+            refreshInstanceId(firebaseInstanceId)
+        } else {
+            if (Firebase.linkInstanceIdModule) {
+                Log.d(tag, "no-install GMS(com.google.firebase:firebase-iid)")
+            } else {
                 Log.d(tag, "no-dependencies(com.google.firebase:firebase-iid)")
-            }
-            else -> {
-                refreshInstanceId(firebaseInstanceId)
             }
         }
         snapshot()
