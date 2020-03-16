@@ -235,4 +235,16 @@ object Firebase {
             }
         }
     }
+
+    /**
+     * Linked module(firebase-storage)
+     */
+    val linkStorageModule: Boolean by lazy {
+        try {
+            storage()
+            true
+        } catch (e: Throwable) {
+            false
+        }
+    }
 }
