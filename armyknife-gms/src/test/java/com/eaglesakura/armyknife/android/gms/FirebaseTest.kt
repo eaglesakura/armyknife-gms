@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.eaglesakura.armyknife.android.ApplicationRuntime
 import com.eaglesakura.armyknife.android.extensions.awaitInCoroutines
+import com.eaglesakura.armyknife.android.junit4.extensions.compatibleTest
 import com.eaglesakura.armyknife.android.junit4.extensions.instrumentationBlockingTest
 import com.eaglesakura.armyknife.android.junit4.extensions.instrumentationTest
 import com.eaglesakura.armyknife.android.junit4.extensions.localTest
@@ -16,6 +17,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -33,6 +35,17 @@ class FirebaseTest {
     @After
     fun after() {
         Firebase.auth?.signOut()
+    }
+
+    @Test
+    fun checkLinking() = compatibleTest {
+        assertTrue(Firebase.linkAppModule)
+        assertTrue(Firebase.linkAuthModule)
+        assertTrue(Firebase.linkFirestoreModule)
+        assertTrue(Firebase.linkInstanceIdModule)
+        assertTrue(Firebase.linkRemoteConfigModule)
+        assertTrue(Firebase.linkStorageModule)
+        assertTrue(Firebase.linkAnalyticsModule)
     }
 
     @Test
@@ -82,8 +95,8 @@ class FirebaseTest {
         }
         assertNotNull(channel.receive().also { snapshot ->
             Log.d(
-                javaClass.simpleName,
-                "Date='${snapshot.date}', User='${snapshot.user?.uid}', Token='${snapshot.token?.token}'"
+                    javaClass.simpleName,
+                    "Date='${snapshot.date}', User='${snapshot.user?.uid}', Token='${snapshot.token?.token}'"
             )
         })
     }

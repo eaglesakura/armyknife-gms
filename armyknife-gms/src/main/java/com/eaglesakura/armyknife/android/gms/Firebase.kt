@@ -2,6 +2,7 @@ package com.eaglesakura.armyknife.android.gms
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.util.Log
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import com.google.firebase.analytics.FirebaseAnalytics
@@ -79,7 +80,7 @@ object Firebase {
      */
     val linkAppModule: Boolean by lazy {
         try {
-            app
+            Log.d("Firebase", "${FirebaseApp::class.java.simpleName} is linking")
             true
         } catch (e: Throwable) {
             false
@@ -102,7 +103,7 @@ object Firebase {
      */
     val linkInstanceIdModule: Boolean by lazy {
         try {
-            instanceId
+            Log.d("Firebase", "${FirebaseInstanceId::class.java.simpleName} is linking")
             true
         } catch (e: Throwable) {
             false
@@ -126,7 +127,7 @@ object Firebase {
      */
     val linkFirestoreModule: Boolean by lazy {
         try {
-            firestore
+            Log.d("Firebase", "${FirebaseFirestore::class.java.simpleName} is linking")
             true
         } catch (e: Throwable) {
             false
@@ -151,7 +152,7 @@ object Firebase {
      */
     val linkRemoteConfigModule: Boolean by lazy {
         try {
-            remoteConfig
+            Log.d("Firebase", "${FirebaseRemoteConfig::class.java.simpleName} is linking")
             true
         } catch (e: Throwable) {
             false
@@ -175,7 +176,7 @@ object Firebase {
      */
     val linkAuthModule: Boolean by lazy {
         try {
-            auth
+            Log.d("Firebase", "${FirebaseAuth::class.java.simpleName} is linking")
             true
         } catch (e: Throwable) {
             false
@@ -200,9 +201,9 @@ object Firebase {
     /**
      * Linked module(firebase-core)
      */
-    fun linkAnalyticsModule(context: Context): Boolean {
-        return try {
-            FirebaseAnalytics.getInstance(context)
+    val linkAnalyticsModule: Boolean by lazy {
+        try {
+            Log.d("Firebase", "${FirebaseAnalytics::class.java.simpleName} is linking")
             true
         } catch (e: Throwable) {
             false
@@ -241,7 +242,7 @@ object Firebase {
      */
     val linkStorageModule: Boolean by lazy {
         try {
-            storage()
+            Log.d("Firebase", "${FirebaseStorage::class.java.simpleName} is linking")
             true
         } catch (e: Throwable) {
             false
