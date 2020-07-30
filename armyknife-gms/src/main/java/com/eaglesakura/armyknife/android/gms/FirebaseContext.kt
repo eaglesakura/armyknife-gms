@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.annotation.AnyThread
 import androidx.annotation.UiThread
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.LiveData
 import com.eaglesakura.armyknife.android.extensions.UIHandler
 import com.eaglesakura.armyknife.android.extensions.assertUIThread
@@ -11,7 +12,7 @@ import com.eaglesakura.armyknife.android.extensions.awaitInCoroutines
 import com.eaglesakura.armyknife.android.extensions.debugMode
 import com.eaglesakura.armyknife.android.extensions.runBlockingOnUiThread
 import com.eaglesakura.armyknife.android.gms.GooglePlayService.coroutineScope
-import com.eaglesakura.armyknife.runtime.LazySingleton
+import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GetTokenResult
@@ -26,6 +27,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.Closeable
 import java.util.concurrent.TimeUnit
 
 /**
@@ -43,16 +45,36 @@ import java.util.concurrent.TimeUnit
  *      // on update firebase status.
  *  }
  */
-class FirebaseContext internal constructor(val context: Context) :
-        LiveData<FirebaseContextSnapshot>() {
+class FirebaseContext internal constructor(
+    private val context: Context,
+    private val name: String,
+    @Suppress("MemberVisibilityCanBePrivate") val app: FirebaseApp?,
+    @Suppress("MemberVisibilityCanBePrivate") val instanceId: FirebaseInstanceId?,
+    @Suppress("MemberVisibilityCanBePrivate") val auth: FirebaseAuth?,
+    @Suppress("MemberVisibilityCanBePrivate") val remoteConfig: FirebaseRemoteConfig?
+) : LiveData<FirebaseContextSnapshot>(), Closeable {
 
-    private val tag = "FirebaseContext"
+    /**
+     * This context is default Firebase instance.
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    val isDefault: Boolean
+        get() = name.isEmpty()
 
+    private val tag = "FirebaseContext($name)"
+
+    /**
+     * Refresh FirebaseAuth token interval(milli seconds)
+     */
     private val userAuthTokenRefreshInterval: Long = when (context.debugMode) {
         true -> TimeUnit.MINUTES.toMillis(5)
         else -> TimeUnit.MINUTES.toMillis(30)
     }
 
+    /**
+     * Refresh FirebaseAuth token interval(milli seconds)
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
     var remoteConfigRefreshInterval: Long = when (context.debugMode) {
         true -> TimeUnit.MINUTES.toMillis(1)
         else -> TimeUnit.MINUTES.toMillis(55)
@@ -62,19 +84,32 @@ class FirebaseContext internal constructor(val context: Context) :
             field = value
         }
 
-    private var user: FirebaseUser? = null
+    private var firebaseUser: FirebaseUser? = null
 
-    private var instanceId: InstanceIdResult? = null
+    private var instanceIdResult: InstanceIdResult? = null
 
-    private var authToken: GetTokenResult? = null
+    private var authTokenResult: GetTokenResult? = null
 
     private var authRefreshJob: Job? = null
 
     init {
-        if (Firebase.linkAuthModule && Firebase.auth != null) {
-            val auth = Firebase.auth!!
-            refreshAuth(auth)
-            auth.addAuthStateListener(FirebaseAuth.AuthStateListener { refreshAuth(it) })
+        if (app != null) {
+            app.addLifecycleEventListener { _, _ ->
+                Log.d(tag, "onDestroy($name)")
+                synchronized(instances) {
+                    instances.remove(name)
+                }
+            }
+        } else {
+            if (Firebase.linkAppModule) {
+                Log.d(tag, "no-install GMS(com.google.firebase:firebase-core)")
+            } else {
+                Log.d(tag, "no-dependencies(com.google.firebase:firebase-core)")
+            }
+        }
+        if (auth != null) {
+            refreshAuth()
+            auth.addAuthStateListener(FirebaseAuth.AuthStateListener { refreshAuth() })
         } else {
             if (Firebase.linkAuthModule) {
                 Log.d(tag, "no-install GMS(com.google.firebase:firebase-auth)")
@@ -82,9 +117,8 @@ class FirebaseContext internal constructor(val context: Context) :
                 Log.d(tag, "no-dependencies(com.google.firebase:firebase-auth)")
             }
         }
-        if (Firebase.linkRemoteConfigModule && Firebase.remoteConfig != null) {
-            val config = Firebase.remoteConfig!!
-            startConfigRefreshLoop(config)
+        if (remoteConfig != null) {
+            startConfigRefreshLoop()
         } else {
             if (Firebase.linkRemoteConfigModule) {
                 Log.d(tag, "no-install GMS(com.google.firebase:firebase-config)")
@@ -92,9 +126,8 @@ class FirebaseContext internal constructor(val context: Context) :
                 Log.d(tag, "no-dependencies(com.google.firebase:firebase-config)")
             }
         }
-        if (Firebase.linkInstanceIdModule && Firebase.instanceId != null) {
-            val firebaseInstanceId = Firebase.instanceId!!
-            refreshInstanceId(firebaseInstanceId)
+        if (instanceId != null) {
+            refreshInstanceId(instanceId)
         } else {
             if (Firebase.linkInstanceIdModule) {
                 Log.d(tag, "no-install GMS(com.google.firebase:firebase-iid)")
@@ -115,19 +148,31 @@ class FirebaseContext internal constructor(val context: Context) :
         }
     }
 
+    /**
+     * Close instance.
+     */
+    override fun close() {
+        synchronized(instances) {
+            app?.delete()
+            instances.remove(name)
+        }
+    }
+
     @UiThread
-    private fun refreshAuth(auth: FirebaseAuth) {
+    private fun refreshAuth() {
         assertUIThread()
-        val oldUser = this.user
+        val auth = this.auth ?: return
+
+        val oldUser = this.firebaseUser
         val newUser = auth.currentUser
 
         // not login now.
         if (newUser == null) {
             this.authRefreshJob?.cancel()
             this.authRefreshJob = null
-            this.authToken = null
+            this.authTokenResult = null
         }
-        this.user = newUser
+        this.firebaseUser = newUser
 
         when {
             oldUser == null && newUser != null -> {
@@ -154,7 +199,7 @@ class FirebaseContext internal constructor(val context: Context) :
                     }
                     withContext(Dispatchers.Main) {
                         if (instanceId.isSuccessful) {
-                            this@FirebaseContext.instanceId = instanceId.result!!
+                            this@FirebaseContext.instanceIdResult = instanceId.result!!
                             snapshot()
                         }
                     }
@@ -174,9 +219,9 @@ class FirebaseContext internal constructor(val context: Context) :
         assertUIThread()
 
         val snapshot = FirebaseContextSnapshot(
-                user = user,
-                instanceId = instanceId,
-                userAuthToken = authToken,
+                user = firebaseUser,
+                instanceId = instanceIdResult,
+                userAuthToken = authTokenResult,
                 remoteConfigValues = try {
                     Firebase.remoteConfig?.all?.toMap() ?: emptyMap()
                 } catch (e: Throwable) {
@@ -194,17 +239,20 @@ class FirebaseContext internal constructor(val context: Context) :
         this.value = snapshot
     }
 
-    private fun startConfigRefreshLoop(config: FirebaseRemoteConfig) {
+    private fun startConfigRefreshLoop() {
+        val remoteConfig = this.remoteConfig ?: return
+
         coroutineScope.launch {
             while (isActive) {
                 try {
                     Log.d(tag, "RemoteConfig.fetch")
-                    config.fetch(remoteConfigRefreshInterval).awaitInCoroutines().also { task ->
-                        task.exception?.also { e ->
-                            Log.i(tag, "fetch failed")
-                            throw e
-                        }
-                    }
+                    remoteConfig.fetch(remoteConfigRefreshInterval).awaitInCoroutines()
+                            .also { task ->
+                                task.exception?.also { e ->
+                                    Log.i(tag, "fetch failed")
+                                    throw e
+                                }
+                            }
                     withContext(Dispatchers.Main) {
                         Log.i(tag, "RemoteConfig.snapshot")
                         snapshot()
@@ -219,17 +267,20 @@ class FirebaseContext internal constructor(val context: Context) :
         }
     }
 
-    private fun startAuthTokenRefreshLoop(@Suppress("UNUSED_PARAMETER") auth: FirebaseAuth, userSnapshot: FirebaseUser) {
+    private fun startAuthTokenRefreshLoop(
+        @Suppress("UNUSED_PARAMETER") auth: FirebaseAuth,
+        userSnapshot: FirebaseUser
+    ) {
         authRefreshJob?.cancel()
         authRefreshJob = coroutineScope.launch {
-            while (userSnapshot == this@FirebaseContext.user) {
+            while (userSnapshot == this@FirebaseContext.firebaseUser) {
                 try {
                     Log.i(tag, "sync user token")
                     val task = userSnapshot.getIdToken(true).awaitInCoroutines()
                     withContext(Dispatchers.Main) {
-                        if (task.isSuccessful && userSnapshot == this@FirebaseContext.user) {
+                        if (task.isSuccessful && userSnapshot == this@FirebaseContext.firebaseUser) {
                             Log.i(tag, "refresh user token")
-                            this@FirebaseContext.authToken = task.result
+                            this@FirebaseContext.authTokenResult = task.result
                             snapshot()
                         } else if (!task.isSuccessful) {
                             throw task.exception!!
@@ -240,21 +291,44 @@ class FirebaseContext internal constructor(val context: Context) :
                     throw e
                 } catch (e: Exception) {
                     e.printStackTrace()
+                    delay(TimeUnit.SECONDS.toMillis(1))
                 }
             }
         }
     }
 
+    override fun toString(): String {
+        return "FirebaseContext(name='${if (isDefault) {
+            "[DEFAULT]"
+        } else {
+            name
+        }}')"
+    }
+
     companion object {
-        private val instanceImpl = LazySingleton<FirebaseContext>()
+        @VisibleForTesting
+        internal val instances = mutableMapOf<String, FirebaseContext>()
 
         /**
-         * new instance.
+         * Get Firebase snapshots.
          */
-        fun getInstance(context: Context): FirebaseContext {
+        fun getInstance(context: Context, name: String = ""): FirebaseContext {
             return runBlockingOnUiThread {
-                instanceImpl.get {
-                    FirebaseContext(context = context.applicationContext)
+                synchronized(instances) {
+                    instances[name]?.also {
+                        return@runBlockingOnUiThread it
+                    }
+
+                    val firebaseContext = FirebaseContext(
+                            context = context,
+                            name = name,
+                            app = Firebase.app(name),
+                            auth = Firebase.auth(name),
+                            instanceId = Firebase.instanceId(name),
+                            remoteConfig = Firebase.remoteConfig(name)
+                    )
+                    instances[name] = firebaseContext
+                    firebaseContext
                 }
             }
         }

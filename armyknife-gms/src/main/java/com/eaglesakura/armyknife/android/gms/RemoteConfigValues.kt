@@ -3,6 +3,7 @@ package com.eaglesakura.armyknife.android.gms
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import kotlin.reflect.KProperty
 
+@Deprecated("unsupported, not use this.")
 object RemoteConfigValues {
     private val config: FirebaseRemoteConfig?
         get() = try {
