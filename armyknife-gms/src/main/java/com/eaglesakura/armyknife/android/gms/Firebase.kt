@@ -20,60 +20,88 @@ import kotlin.concurrent.withLock
  * Firebase access util.
  */
 object Firebase {
+    private val apps = mutableMapOf<String, FirebaseApp>()
+    private val lock = ReentrantLock()
 
     /**
      * for Unit Test.
      */
     @Suppress("MemberVisibilityCanBePrivate")
     fun provideFromAssets(context: Context, googleServicesJsonPath: String) =
-            provideFromGoogleServiceJson(context, context.assets.open(googleServicesJsonPath).use {
-                it.readBytes().toString(Charset.forName("UTF-8"))
-            })
+        provideFromGoogleServiceJson(context, context.assets.open(googleServicesJsonPath).use {
+            it.readBytes().toString(Charset.forName("UTF-8"))
+        })
 
     /**
      * for UnitTest.
      */
     @Suppress("MemberVisibilityCanBePrivate")
     fun provideFromGoogleServiceJson(context: Context, json: String) {
-        firebaseAppProvider = {
-            FirebaseApp.initializeApp(context, FirebaseOptions.Builder().also { builder ->
-                val root = JSONObject(json)
-                root.getJSONObject("project_info").also { values ->
-                    builder.setDatabaseUrl(values["firebase_url"].toString())
-                    builder.setGcmSenderId(values["project_number"].toString())
-                    builder.setProjectId(values["project_id"].toString())
-                    builder.setStorageBucket(values["storage_bucket"].toString())
+        firebaseAppProvider = fun(name: String): FirebaseApp {
+            return lock.withLock {
+                // cache check.
+                apps[name]?.also {
+                    return@withLock it
                 }
-                root.getJSONArray("client").getJSONObject(0).also { client ->
-                    client.getJSONObject("client_info").also { values ->
-                        builder.setApplicationId(values["mobilesdk_app_id"].toString())
+
+                val options = FirebaseOptions.Builder().also { builder ->
+                    val root = JSONObject(json)
+                    root.getJSONObject("project_info").also { values ->
+                        builder.setDatabaseUrl(values["firebase_url"].toString())
+                        builder.setGcmSenderId(values["project_number"].toString())
+                        builder.setProjectId(values["project_id"].toString())
+                        builder.setStorageBucket(values["storage_bucket"].toString())
                     }
-                    client.getJSONArray("api_key").getJSONObject(0).also { apiKey ->
-                        builder.setApiKey(apiKey["current_key"].toString())
+                    root.getJSONArray("client").getJSONObject(0).also { client ->
+                        client.getJSONObject("client_info").also { values ->
+                            builder.setApplicationId(values["mobilesdk_app_id"].toString())
+                        }
+                        client.getJSONArray("api_key").getJSONObject(0).also { apiKey ->
+                            builder.setApiKey(apiKey["current_key"].toString())
+                        }
                     }
+                }.build()
+
+                val app = if (name.isEmpty()) {
+                    FirebaseApp.initializeApp(context, options)
+                } else {
+                    FirebaseApp.initializeApp(context, options, name)
                 }
-            }.build())
+
+                apps[name] = app
+                return@withLock app
+            }
         }
     }
 
     /**
      * FirebaseApp instance factory.
      */
-    var firebaseAppProvider: (() -> FirebaseApp) = {
-        FirebaseApp.getInstance()
+    var firebaseAppProvider = fun(name: String): FirebaseApp {
+        return if (name.isEmpty()) {
+            FirebaseApp.getInstance()
+        } else {
+            FirebaseApp.getInstance(name)
+        }
     }
 
     /**
-     * Firebase app instance.
+     * get FirebaseApp instance by name.
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    val app: FirebaseApp? by lazy {
-        try {
-            firebaseAppProvider()
+    fun app(name: String = ""): FirebaseApp? {
+        return try {
+            firebaseAppProvider(name)
         } catch (e: Throwable) {
             null
         }
     }
+
+    /**
+     * Firebase app default instance.
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    val app: FirebaseApp? by lazy { app() }
 
     /**
      * Linked module(firebase-core)
@@ -88,7 +116,19 @@ object Firebase {
     }
 
     /**
-     * Firebase instance ID
+     * get FirebaseInstanceId by name.
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    fun instanceId(name: String = ""): FirebaseInstanceId? {
+        return try {
+            FirebaseInstanceId.getInstance(app(name)!!)
+        } catch (e: Throwable) {
+            null
+        }
+    }
+
+    /**
+     * default Firebase instance ID
      */
     val instanceId: FirebaseInstanceId? by lazy {
         try {
@@ -111,7 +151,19 @@ object Firebase {
     }
 
     /**
-     * Firebase Cloud Firestore instance.
+     * default Firebase Cloud Firestore instance.
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    fun firestore(name: String): FirebaseFirestore? {
+        return try {
+            FirebaseFirestore.getInstance(app(name)!!)
+        } catch (e: Throwable) {
+            null
+        }
+    }
+
+    /**
+     * default Firebase Cloud Firestore instance.
      */
     @Suppress("MemberVisibilityCanBePrivate")
     val firestore: FirebaseFirestore? by lazy {
@@ -135,7 +187,19 @@ object Firebase {
     }
 
     /**
-     * Firebase Remote Config instance.
+     * Firebase Remote Config instance by name.
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    fun remoteConfig(name: String): FirebaseRemoteConfig? {
+        return try {
+            FirebaseRemoteConfig.getInstance(app(name)!!)
+        } catch (e: Throwable) {
+            null
+        }
+    }
+
+    /**
+     * default Firebase Remote Config instance.
      */
     @Suppress("MemberVisibilityCanBePrivate")
     val remoteConfig: FirebaseRemoteConfig? by lazy {
@@ -160,7 +224,19 @@ object Firebase {
     }
 
     /**
-     * Firebase auth instance.
+     * Firebase auth instance by name.
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    fun auth(name: String): FirebaseAuth? {
+        return try {
+            FirebaseAuth.getInstance(app(name)!!)
+        } catch (e: Throwable) {
+            null
+        }
+    }
+
+    /**
+     * default Firebase auth instance.
      */
     @Suppress("MemberVisibilityCanBePrivate")
     val auth: FirebaseAuth? by lazy {
@@ -184,7 +260,7 @@ object Firebase {
     }
 
     /**
-     * Firebase analytics isinstance.
+     * Firebase analytics instance.
      *
      * Required Permissions)
      *  1. android.permission.ACCESS_NETWORK_STATE
@@ -210,30 +286,20 @@ object Firebase {
         }
     }
 
-    private val lock = ReentrantLock()
-
-    private val storageCaches = mutableMapOf<String, FirebaseStorage>()
-
     /**
      * returns Firebase storage instance.
      */
-    fun storage(url: String = ""): FirebaseStorage? {
-        lock.withLock {
-            if (storageCaches[url] != null) {
-                return storageCaches[url]
+    fun storage(url: String = "", name: String = ""): FirebaseStorage? {
+        // make a storage.
+        return try {
+            val app = app(name)!!
+            if (url.isEmpty()) {
+                FirebaseStorage.getInstance(app)
+            } else {
+                FirebaseStorage.getInstance(app, url)
             }
-
-            // make a storage.
-            return try {
-                storageCaches[url] = if (url.isEmpty()) {
-                    FirebaseStorage.getInstance(app!!)
-                } else {
-                    FirebaseStorage.getInstance(app!!, url)
-                }
-                storageCaches[url]
-            } catch (e: Throwable) {
-                null
-            }
+        } catch (e: Throwable) {
+            null
         }
     }
 

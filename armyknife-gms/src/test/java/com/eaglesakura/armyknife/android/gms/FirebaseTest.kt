@@ -54,6 +54,7 @@ class FirebaseTest {
         assertNotNull(Firebase.auth)
         assertNotNull(Firebase.firestore)
         assertNotNull(Firebase.storage())
+        assertEquals(Firebase.storage(), Firebase.storage())
         assertNotNull(Firebase.instanceId)
         assertNotNull(Firebase.remoteConfig)
     }
@@ -95,8 +96,8 @@ class FirebaseTest {
         }
         assertNotNull(channel.receive().also { snapshot ->
             Log.d(
-                    javaClass.simpleName,
-                    "Date='${snapshot.date}', User='${snapshot.user?.uid}', Token='${snapshot.token?.token}'"
+                javaClass.simpleName,
+                "Date='${snapshot.date}', User='${snapshot.user?.uid}', Token='${snapshot.token?.token}'"
             )
         })
     }
