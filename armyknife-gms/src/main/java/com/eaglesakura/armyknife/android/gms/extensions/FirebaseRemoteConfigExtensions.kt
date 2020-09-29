@@ -4,12 +4,12 @@ package com.eaglesakura.armyknife.android.gms.extensions
 
 import com.eaglesakura.armyknife.android.extensions.fetch
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
+import java.util.concurrent.TimeUnit
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
-import java.util.concurrent.TimeUnit
-import kotlin.coroutines.coroutineContext
 
 const val FETCH_STATUS_HAS_VALUES = 0x01 shl 6
 

@@ -78,11 +78,11 @@ class FirebaseContextTest {
     fun auth_multi() = instrumentationBlockingTest(Dispatchers.Main) {
         val defInstance = FirebaseContext.getInstance(targetApplication)
         val namedInstance =
-                FirebaseContext.getInstance(targetApplication, "test@${Random.smallString()}")
+            FirebaseContext.getInstance(targetApplication, "test@${Random.smallString()}")
 
         listOf(
-                defInstance.auth!!.signInAnonymously(),
-                namedInstance.auth!!.signInAnonymously()
+            defInstance.auth!!.signInAnonymously(),
+            namedInstance.auth!!.signInAnonymously()
         ).forEach {
             it.awaitInCoroutines()
         }
@@ -91,8 +91,8 @@ class FirebaseContextTest {
         assertNotNull(namedInstance.auth!!.currentUser)
 
         assertNotEquals(
-                defInstance.auth!!.currentUser!!.uid,
-                namedInstance.auth!!.currentUser!!.uid
+            defInstance.auth!!.currentUser!!.uid,
+            namedInstance.auth!!.currentUser!!.uid
         )
     }
 
@@ -103,12 +103,12 @@ class FirebaseContextTest {
         instance.observeForever { snapshot ->
             Log.d("FirebaseContextTest", "$snapshot")
             Log.d(
-                    "FirebaseContextTest",
-                    "user.token='${snapshot.userAuthToken?.token}', instance.id='${snapshot?.instanceId?.id}', instance.token='${snapshot?.instanceId?.token}'"
+                "FirebaseContextTest",
+                "user.token='${snapshot.userAuthToken?.token}', instance.id='${snapshot?.instanceId?.id}', instance.token='${snapshot?.instanceId?.token}'"
             )
             Log.d(
-                    "FirebaseContextTest",
-                    "remoteconfig.status='${snapshot.remoteConfigFetchStatus}'"
+                "FirebaseContextTest",
+                "remoteconfig.status='${snapshot.remoteConfigFetchStatus}'"
             )
         }
 

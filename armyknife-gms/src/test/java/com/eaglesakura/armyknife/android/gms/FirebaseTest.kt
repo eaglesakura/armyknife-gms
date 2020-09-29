@@ -79,9 +79,11 @@ class FirebaseTest {
             }
         }
 
-        assertNotNull(channel.receive().let {
-            Log.d(javaClass.simpleName, "InstanceId='${it.id}', Token='${it.token}'")
-        })
+        assertNotNull(
+            channel.receive().let {
+                Log.d(javaClass.simpleName, "InstanceId='${it.id}', Token='${it.token}'")
+            }
+        )
     }
 
     @Test
@@ -94,12 +96,14 @@ class FirebaseTest {
                 channel.send(Dispatchers.Main, it)
             }
         }
-        assertNotNull(channel.receive().also { snapshot ->
-            Log.d(
-                javaClass.simpleName,
-                "Date='${snapshot.date}', User='${snapshot.user?.uid}', Token='${snapshot.token?.token}'"
-            )
-        })
+        assertNotNull(
+            channel.receive().also { snapshot ->
+                Log.d(
+                    javaClass.simpleName,
+                    "Date='${snapshot.date}', User='${snapshot.user?.uid}', Token='${snapshot.token?.token}'"
+                )
+            }
+        )
     }
 
     @Test

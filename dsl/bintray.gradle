@@ -1,26 +1,29 @@
 group = artifact_group
 version = artifact_version
 
-if (project.hasProperty("install_snapshot")) {
-    apply plugin: 'maven'
-} else {
-    apply plugin: 'com.jfrog.bintray'
-    apply plugin: 'com.github.dcendents.android-maven'  // Generate POM for bintray.
-}
-apply plugin: 'org.jetbrains.dokka-android'
-
-dokka {
-    outputFormat = 'javadoc'
+apply plugin: "org.jetbrains.dokka"
+dokkaHtml {
+    outputDirectory = "$buildDir/dokka"
+    dokkaSourceSets {
+        configureEach {
+            noStdlibLink = true
+            noJdkLink = true
+            noAndroidSdkLink = true
+        }
+    }
 }
 
 task sourcesJar(type: Jar) {
     from android.sourceSets.main.java.srcDirs
-    classifier = 'sources'
+    archiveClassifier.set('sources')
 }
-task javadocJar(type: Jar, dependsOn: dokka) {
+
+task javadocJar(type: Jar, dependsOn: dokkaHtml) {
     from "$buildDir/dokka"
-    classifier = 'javadoc'
+    archiveClassifier.set('javadoc')
 }
+
+
 android.libraryVariants.all { variant ->
     if ("release" != variant.name || "" == artifact_version) {
         return
@@ -33,17 +36,32 @@ android.libraryVariants.all { variant ->
 }
 
 if (project.hasProperty("install_snapshot")) {
-    apply plugin: 'maven'
     println("deploy to mavenLocal()")
-    uploadArchives {
-        repositories {
-            mavenDeployer {
-                repository(url: "file://${System.getProperty('user.home')}/.m2/repository")
+    println ":${project.name}:publishToMavenLocal -> file:${System.getProperty('user.home')}/.m2/repository : ${version}"
+    apply plugin: 'maven-publish'
+    /**
+     * Maven deploy settings.
+     * https://developer.android.com/studio/build/maven-publish-plugin
+     */
+    afterEvaluate {
+        publishing {
+            publications {
+                release(MavenPublication) {
+                    from components.release
+                    groupId = artifact_group
+                    artifactId = project.name
+                    // Adds javadocs and sources as separate jars.
+                    artifact sourcesJar
+                    artifact javadocJar
+                }
             }
         }
     }
 } else {
     println("deploy to bintray.")
+    println ":${project.name}:bintrayUpload  -> ${artifact_group} : ${version}"
+    apply plugin: 'com.jfrog.bintray'
+    apply plugin: 'com.github.dcendents.android-maven'  // Generate POM for bintray.
     bintray {
         user = 'eaglesakura'
         key = System.env.BINTRAY_API_KEY
@@ -70,5 +88,3 @@ if (project.hasProperty("install_snapshot")) {
 }
 
 
-println ":${project.name}:bintrayUpload  -> ${artifact_group} : ${version}"
-println ":${project.name}:uploadArchives -> file:${System.getProperty('user.home')}/.m2/repository : ${version}"

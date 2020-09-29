@@ -11,8 +11,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.iid.FirebaseInstanceId
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.storage.FirebaseStorage
-import org.json.JSONObject
 import java.nio.charset.Charset
+import org.json.JSONObject
 
 /**
  * Firebase access util.
@@ -25,9 +25,12 @@ object Firebase {
      */
     @Suppress("MemberVisibilityCanBePrivate")
     fun provideFromAssets(context: Context, googleServicesJsonPath: String) =
-            provideFromGoogleServiceJson(context, context.assets.open(googleServicesJsonPath).use {
+        provideFromGoogleServiceJson(
+            context,
+            context.assets.open(googleServicesJsonPath).use {
                 it.readBytes().toString(Charset.forName("UTF-8"))
-            })
+            }
+        )
 
     /**
      * for UnitTest.
