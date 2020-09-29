@@ -32,7 +32,7 @@ dependencies {
     "compileOnly"("com.google.firebase:firebase-firestore:21.6.0")
     "compileOnly"("com.google.firebase:firebase-storage:19.2.0")
     "compileOnly"("com.google.firebase:firebase-storage:19.2.0")
-    "compileOnly"("com.crashlytics.sdk.android:crashlytics:2.10.1")
+    "compileOnly"("com.google.firebase:firebase-crashlytics:17.2.1")
 
     "testImplementation"("com.google.firebase:firebase-core:17.5.0")
     "testImplementation"("com.google.firebase:firebase-auth:19.4.0")
