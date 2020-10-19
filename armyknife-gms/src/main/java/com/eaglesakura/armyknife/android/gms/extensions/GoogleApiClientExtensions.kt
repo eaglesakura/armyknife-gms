@@ -23,9 +23,9 @@ import kotlinx.coroutines.withContext
  * @see GoogleApiClient.SIGN_IN_MODE_OPTIONAL
  */
 @Throws(
-        DeveloperImplementFailedException::class,
-        RequireRetryConnectException::class,
-        PlayServiceException::class
+    DeveloperImplementFailedException::class,
+    RequireRetryConnectException::class,
+    PlayServiceException::class
 )
 suspend fun GoogleApiClient.Builder.connect(mode: Int): GoogleApiClient {
     return when (mode) {
@@ -46,18 +46,18 @@ suspend fun GoogleApiClient.Builder.connect(mode: Int): GoogleApiClient {
  * GoogleApiClient build with awaitWithSuspend.
  */
 @Throws(
-        DeveloperImplementFailedException::class,
-        RequireRetryConnectException::class,
-        PlayServiceException::class
+    DeveloperImplementFailedException::class,
+    RequireRetryConnectException::class,
+    PlayServiceException::class
 )
 suspend fun GoogleApiClient.Builder.connect(): GoogleApiClient {
     return connectImpl(0x00FF00FF)
 }
 
 @Throws(
-        DeveloperImplementFailedException::class,
-        RequireRetryConnectException::class,
-        PlayServiceException::class
+    DeveloperImplementFailedException::class,
+    RequireRetryConnectException::class,
+    PlayServiceException::class
 )
 private suspend fun GoogleApiClient.Builder.connectImpl(mode: Int): GoogleApiClient {
     val channel = Channel<Pair<Bundle?, Exception?>>(1)
@@ -77,12 +77,12 @@ private suspend fun GoogleApiClient.Builder.connectImpl(mode: Int): GoogleApiCli
         override fun onConnectionFailed(result: ConnectionResult) {
             GlobalScope.launch(Dispatchers.Main) {
                 channel.send(
-                        when (result.errorCode) {
-                            ConnectionResult.DEVELOPER_ERROR -> null to DeveloperImplementFailedException(result)
-                            ConnectionResult.SIGN_IN_REQUIRED -> null to SignInRequiredException(result)
-                            ConnectionResult.SIGN_IN_FAILED -> null to SignInFailedException(result)
-                            else -> null to PlayServiceConnectException(result)
-                        }
+                    when (result.errorCode) {
+                        ConnectionResult.DEVELOPER_ERROR -> null to DeveloperImplementFailedException(result)
+                        ConnectionResult.SIGN_IN_REQUIRED -> null to SignInRequiredException(result)
+                        ConnectionResult.SIGN_IN_FAILED -> null to SignInFailedException(result)
+                        else -> null to PlayServiceConnectException(result)
+                    }
                 )
             }
         }

@@ -20,6 +20,8 @@ import com.google.firebase.iid.FirebaseInstanceId
 import com.google.firebase.iid.InstanceIdResult
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigValue
+import java.io.Closeable
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -27,8 +29,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.Closeable
-import java.util.concurrent.TimeUnit
 
 /**
  * Firebase current context LiveData.
@@ -219,21 +219,21 @@ class FirebaseContext internal constructor(
         assertUIThread()
 
         val snapshot = FirebaseContextSnapshot(
-                user = firebaseUser,
-                instanceId = instanceIdResult,
-                userAuthToken = authTokenResult,
-                remoteConfigValues = try {
-                    Firebase.remoteConfig?.all?.toMap() ?: emptyMap()
-                } catch (e: Throwable) {
-                    @Suppress("RemoveExplicitTypeArguments" /* for Intellij compiler */)
-                    emptyMap<String, FirebaseRemoteConfigValue>()
-                },
-                remoteConfigFetchStatus = try {
-                    Firebase.remoteConfig?.info?.lastFetchStatus
-                            ?: FirebaseRemoteConfig.LAST_FETCH_STATUS_NO_FETCH_YET
-                } catch (e: Throwable) {
-                    FirebaseRemoteConfig.LAST_FETCH_STATUS_NO_FETCH_YET
-                }
+            user = firebaseUser,
+            instanceId = instanceIdResult,
+            userAuthToken = authTokenResult,
+            remoteConfigValues = try {
+                Firebase.remoteConfig?.all?.toMap() ?: emptyMap()
+            } catch (e: Throwable) {
+                @Suppress("RemoveExplicitTypeArguments" /* for Intellij compiler */)
+                emptyMap<String, FirebaseRemoteConfigValue>()
+            },
+            remoteConfigFetchStatus = try {
+                Firebase.remoteConfig?.info?.lastFetchStatus
+                    ?: FirebaseRemoteConfig.LAST_FETCH_STATUS_NO_FETCH_YET
+            } catch (e: Throwable) {
+                FirebaseRemoteConfig.LAST_FETCH_STATUS_NO_FETCH_YET
+            }
         )
         Log.d(tag, "refresh FirebaseContextSnapshot/${snapshot.id}/${snapshot.date}")
         this.value = snapshot
@@ -247,12 +247,12 @@ class FirebaseContext internal constructor(
                 try {
                     Log.d(tag, "RemoteConfig.fetch")
                     remoteConfig.fetch(remoteConfigRefreshInterval).awaitInCoroutines()
-                            .also { task ->
-                                task.exception?.also { e ->
-                                    Log.i(tag, "fetch failed")
-                                    throw e
-                                }
+                        .also { task ->
+                            task.exception?.also { e ->
+                                Log.i(tag, "fetch failed")
+                                throw e
                             }
+                        }
                     withContext(Dispatchers.Main) {
                         Log.i(tag, "RemoteConfig.snapshot")
                         snapshot()
@@ -320,12 +320,12 @@ class FirebaseContext internal constructor(
                     }
 
                     val firebaseContext = FirebaseContext(
-                            context = context,
-                            name = name,
-                            app = Firebase.app(name),
-                            auth = Firebase.auth(name),
-                            instanceId = Firebase.instanceId(name),
-                            remoteConfig = Firebase.remoteConfig(name)
+                        context = context,
+                        name = name,
+                        app = Firebase.app(name),
+                        auth = Firebase.auth(name),
+                        instanceId = Firebase.instanceId(name),
+                        remoteConfig = Firebase.remoteConfig(name)
                     )
                     instances[name] = firebaseContext
                     firebaseContext

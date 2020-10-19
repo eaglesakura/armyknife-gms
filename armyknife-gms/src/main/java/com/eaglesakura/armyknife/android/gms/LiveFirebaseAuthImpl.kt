@@ -6,9 +6,9 @@ import com.eaglesakura.armyknife.android.gms.GooglePlayService.coroutineScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GetTokenResult
+import java.util.Date
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.util.Date
 
 internal object LiveFirebaseAuthImpl : LiveData<FirebaseAuthSnapshot>() {
     override fun onActive() {

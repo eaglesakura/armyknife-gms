@@ -4,13 +4,13 @@ import androidx.lifecycle.LiveData
 import com.eaglesakura.armyknife.android.extensions.awaitInCoroutines
 import com.google.firebase.iid.FirebaseInstanceId
 import com.google.firebase.iid.InstanceIdResult
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import java.util.concurrent.TimeUnit
 
 internal object LiveInstanceIdImpl : LiveData<InstanceIdResult>() {
 
