@@ -59,7 +59,7 @@ class FirebaseContext internal constructor(
      */
     @Suppress("MemberVisibilityCanBePrivate")
     val isDefault: Boolean
-        get() = name.isEmpty()
+        get() = (name == FirebaseApp.DEFAULT_APP_NAME)
 
     private val tag = "FirebaseContext($name)"
 
@@ -102,7 +102,7 @@ class FirebaseContext internal constructor(
             }
         } else {
             if (Firebase.linkAppModule) {
-                Log.d(tag, "no-install GMS(com.google.firebase:firebase-core)")
+                Log.d(tag, "installed GMS(com.google.firebase:firebase-core)")
             } else {
                 Log.d(tag, "no-dependencies(com.google.firebase:firebase-core)")
             }
@@ -112,7 +112,7 @@ class FirebaseContext internal constructor(
             auth.addAuthStateListener(FirebaseAuth.AuthStateListener { refreshAuth() })
         } else {
             if (Firebase.linkAuthModule) {
-                Log.d(tag, "no-install GMS(com.google.firebase:firebase-auth)")
+                Log.d(tag, "installed GMS(com.google.firebase:firebase-auth)")
             } else {
                 Log.d(tag, "no-dependencies(com.google.firebase:firebase-auth)")
             }
@@ -121,7 +121,7 @@ class FirebaseContext internal constructor(
             startConfigRefreshLoop()
         } else {
             if (Firebase.linkRemoteConfigModule) {
-                Log.d(tag, "no-install GMS(com.google.firebase:firebase-config)")
+                Log.d(tag, "installed GMS(com.google.firebase:firebase-config)")
             } else {
                 Log.d(tag, "no-dependencies(com.google.firebase:firebase-config)")
             }
@@ -130,7 +130,7 @@ class FirebaseContext internal constructor(
             refreshInstanceId(instanceId)
         } else {
             if (Firebase.linkInstanceIdModule) {
-                Log.d(tag, "no-install GMS(com.google.firebase:firebase-iid)")
+                Log.d(tag, "installed GMS(com.google.firebase:firebase-iid)")
             } else {
                 Log.d(tag, "no-dependencies(com.google.firebase:firebase-iid)")
             }
@@ -298,11 +298,13 @@ class FirebaseContext internal constructor(
     }
 
     override fun toString(): String {
-        return "FirebaseContext(name='${if (isDefault) {
+        return "FirebaseContext(name='${
+        if (isDefault) {
             "[DEFAULT]"
         } else {
             name
-        }}')"
+        }
+        }')"
     }
 
     companion object {
@@ -312,7 +314,10 @@ class FirebaseContext internal constructor(
         /**
          * Get Firebase snapshots.
          */
-        fun getInstance(context: Context, name: String = ""): FirebaseContext {
+        fun getInstance(
+            context: Context,
+            name: String = FirebaseApp.DEFAULT_APP_NAME,
+        ): FirebaseContext {
             return runBlockingOnUiThread {
                 synchronized(instances) {
                     instances[name]?.also {
