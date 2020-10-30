@@ -10,6 +10,7 @@ import com.eaglesakura.armyknife.android.junit4.extensions.instrumentationTest
 import com.eaglesakura.armyknife.android.junit4.extensions.localTest
 import com.eaglesakura.armyknife.android.junit4.extensions.testContext
 import com.eaglesakura.armyknife.runtime.extensions.send
+import com.google.firebase.FirebaseApp
 import com.google.firebase.iid.InstanceIdResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -53,8 +54,11 @@ class FirebaseTest {
         assertNotNull(Firebase.app)
         assertNotNull(Firebase.auth)
         assertNotNull(Firebase.firestore)
-        assertNotNull(Firebase.storage())
-        assertEquals(Firebase.storage(), Firebase.storage())
+        assertNotNull(Firebase.storage(name = FirebaseApp.DEFAULT_APP_NAME))
+        assertEquals(
+            Firebase.storage(name = FirebaseApp.DEFAULT_APP_NAME),
+            Firebase.storage(name = FirebaseApp.DEFAULT_APP_NAME)
+        )
         assertNotNull(Firebase.instanceId)
         assertNotNull(Firebase.remoteConfig)
     }
@@ -64,7 +68,7 @@ class FirebaseTest {
         assertNull(Firebase.app)
         assertNull(Firebase.auth)
         assertNull(Firebase.firestore)
-        assertNull(Firebase.storage())
+        assertNull(Firebase.storage(name = FirebaseApp.DEFAULT_APP_NAME))
         assertNull(Firebase.instanceId)
         assertNull(Firebase.remoteConfig)
     }
@@ -84,6 +88,13 @@ class FirebaseTest {
                 Log.d(javaClass.simpleName, "InstanceId='${it.id}', Token='${it.token}'")
             }
         )
+    }
+
+    @Test
+    fun getInstallationsId() = instrumentationBlockingTest(Dispatchers.Main) {
+        val installationsId =
+            Firebase.installations(FirebaseApp.DEFAULT_APP_NAME)!!.id.awaitInCoroutines()
+        Log.d(javaClass.simpleName, "InstallationsId=${installationsId.result}")
     }
 
     @Test

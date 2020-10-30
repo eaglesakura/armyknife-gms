@@ -9,6 +9,7 @@ import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.iid.FirebaseInstanceId
+import com.google.firebase.installations.FirebaseInstallations
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.storage.FirebaseStorage
 import java.nio.charset.Charset
@@ -18,8 +19,6 @@ import org.json.JSONObject
  * Firebase access util.
  */
 object Firebase {
-    private val apps = mutableMapOf<String, FirebaseApp>()
-
     /**
      * for Unit Test.
      */
@@ -56,10 +55,10 @@ object Firebase {
                 }
             }.build()
 
-            return if (name.isEmpty()) {
-                FirebaseApp.initializeApp(context, options)
-            } else {
+            return if (FirebaseApp.getApps(context).find { it.name == name } == null) {
                 FirebaseApp.initializeApp(context, options, name)
+            } else {
+                FirebaseApp.getInstance(name)
             }
         }
     }
@@ -79,22 +78,9 @@ object Firebase {
      * get FirebaseApp instance by name.
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    fun app(name: String = ""): FirebaseApp? {
+    fun app(name: String): FirebaseApp? {
         return try {
-            synchronized(apps) {
-                apps[name]?.also {
-                    return@synchronized it
-                }
-
-                val result = firebaseAppProvider(name)
-                result.addLifecycleEventListener { _, _ ->
-                    synchronized(apps) {
-                        apps.remove(name)
-                    }
-                }
-                apps[name] = result
-                return result
-            }
+            return firebaseAppProvider(name)
         } catch (e: Throwable) {
             null
         }
@@ -104,7 +90,8 @@ object Firebase {
      * Firebase app default instance.
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    val app: FirebaseApp? by lazy { app() }
+    val app: FirebaseApp?
+        get() = app(FirebaseApp.DEFAULT_APP_NAME)
 
     /**
      * Linked module(firebase-core)
@@ -121,8 +108,9 @@ object Firebase {
     /**
      * get FirebaseInstanceId by name.
      */
+    @Deprecated("FirebaseInstanceId is deprecated")
     @Suppress("MemberVisibilityCanBePrivate")
-    fun instanceId(name: String = ""): FirebaseInstanceId? {
+    fun instanceId(name: String): FirebaseInstanceId? {
         return try {
             FirebaseInstanceId.getInstance(app(name)!!)
         } catch (e: Throwable) {
@@ -133,9 +121,34 @@ object Firebase {
     /**
      * default Firebase instance ID
      */
-    val instanceId: FirebaseInstanceId? by lazy {
-        try {
+    @Deprecated("FirebaseInstanceId is deprecated")
+    val instanceId: FirebaseInstanceId?
+        get() = try {
             FirebaseInstanceId.getInstance(app!!)
+        } catch (e: Throwable) {
+            null
+        }
+
+    /**
+     * Linked module(firebase-iid)
+     */
+    @Deprecated("FirebaseInstanceId is deprecated")
+    val linkInstanceIdModule: Boolean by lazy {
+        try {
+            Log.d("Firebase", "${FirebaseInstanceId::class.java.simpleName} is linking")
+            true
+        } catch (e: Throwable) {
+            false
+        }
+    }
+
+    /**
+     * get FirebaseInstanceId by name.
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    fun installations(name: String): FirebaseInstallations? {
+        return try {
+            FirebaseInstallations.getInstance(app(name)!!)
         } catch (e: Throwable) {
             null
         }
@@ -144,9 +157,9 @@ object Firebase {
     /**
      * Linked module(firebase-iid)
      */
-    val linkInstanceIdModule: Boolean by lazy {
+    val linkInstallationsModule: Boolean by lazy {
         try {
-            Log.d("Firebase", "${FirebaseInstanceId::class.java.simpleName} is linking")
+            Log.d("Firebase", "${FirebaseInstallations::class.java.simpleName} is linking")
             true
         } catch (e: Throwable) {
             false
@@ -169,13 +182,12 @@ object Firebase {
      * default Firebase Cloud Firestore instance.
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    val firestore: FirebaseFirestore? by lazy {
-        try {
+    val firestore: FirebaseFirestore?
+        get() = try {
             FirebaseFirestore.getInstance(app!!)
         } catch (e: Throwable) {
             null
         }
-    }
 
     /**
      * Linked module(firestore)
@@ -193,7 +205,7 @@ object Firebase {
      * Firebase Remote Config instance by name.
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    fun remoteConfig(name: String = ""): FirebaseRemoteConfig? {
+    fun remoteConfig(name: String): FirebaseRemoteConfig? {
         return try {
             FirebaseRemoteConfig.getInstance(app(name)!!)
         } catch (e: Throwable) {
@@ -205,14 +217,13 @@ object Firebase {
      * default Firebase Remote Config instance.
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    val remoteConfig: FirebaseRemoteConfig? by lazy {
-        try {
+    val remoteConfig: FirebaseRemoteConfig?
+        get() = try {
             app!!
             FirebaseRemoteConfig.getInstance()
         } catch (e: Throwable) {
             null
         }
-    }
 
     /**
      * Linked module(firebase-config)
@@ -230,7 +241,7 @@ object Firebase {
      * Firebase auth instance by name.
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    fun auth(name: String = ""): FirebaseAuth? {
+    fun auth(name: String): FirebaseAuth? {
         return try {
             FirebaseAuth.getInstance(app(name)!!)
         } catch (e: Throwable) {
@@ -242,13 +253,12 @@ object Firebase {
      * default Firebase auth instance.
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    val auth: FirebaseAuth? by lazy {
-        try {
+    val auth: FirebaseAuth?
+        get() = try {
             FirebaseAuth.getInstance(app!!)
         } catch (e: Throwable) {
             null
         }
-    }
 
     /**
      * Linked module(firebase-auth)
@@ -292,7 +302,7 @@ object Firebase {
     /**
      * returns Firebase storage instance.
      */
-    fun storage(url: String = "", name: String = ""): FirebaseStorage? {
+    fun storage(url: String = "", name: String): FirebaseStorage? {
         // make a storage.
         return try {
             val app = app(name)!!

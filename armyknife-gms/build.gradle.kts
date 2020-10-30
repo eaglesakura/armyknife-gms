@@ -19,32 +19,32 @@ dependencies {
     /**
      * Google Play Services
      */
-    "compileOnly"("com.google.android.gms:play-services-base:17.4.0")
+    "compileOnly"("com.google.android.gms:play-services-base:17.5.0")
     "compileOnly"("com.google.android.gms:play-services-auth:18.1.0")
 
     /**
      * Firebase
      */
-    "compileOnly"("com.google.firebase:firebase-core:17.5.1")
-    "compileOnly"("com.google.firebase:firebase-auth:19.4.0")
-    "compileOnly"("com.google.firebase:firebase-config:19.2.0")
-    "compileOnly"("com.google.firebase:firebase-iid:20.3.0")
-    "compileOnly"("com.google.firebase:firebase-firestore:21.7.1")
+    "compileOnly"("com.google.firebase:firebase-core:18.0.0")
+    "compileOnly"("com.google.firebase:firebase-auth:20.0.0")
+    "compileOnly"("com.google.firebase:firebase-config:20.0.0")
+    "compileOnly"("com.google.firebase:firebase-iid:21.0.0")
+    "compileOnly"("com.google.firebase:firebase-firestore:22.0.0")
     "compileOnly"("com.google.firebase:firebase-storage:19.2.0")
     "compileOnly"("com.google.firebase:firebase-storage:19.2.0")
     "compileOnly"("com.google.firebase:firebase-crashlytics:17.2.2")
 
-    "testImplementation"("com.google.firebase:firebase-core:17.5.1")
-    "testImplementation"("com.google.firebase:firebase-auth:19.4.0")
-    "testImplementation"("com.google.firebase:firebase-config:19.2.0")
-    "testImplementation"("com.google.firebase:firebase-iid:20.3.0")
-    "testImplementation"("com.google.firebase:firebase-firestore:21.7.1")
+    "testImplementation"("com.google.firebase:firebase-core:18.0.0")
+    "testImplementation"("com.google.firebase:firebase-auth:20.0.0")
+    "testImplementation"("com.google.firebase:firebase-config:20.0.0")
+    "testImplementation"("com.google.firebase:firebase-iid:21.0.0")
+    "testImplementation"("com.google.firebase:firebase-firestore:22.0.0")
     "testImplementation"("com.google.firebase:firebase-storage:19.2.0")
 
-    "androidTestImplementation"("com.google.firebase:firebase-core:17.5.1")
-    "androidTestImplementation"("com.google.firebase:firebase-auth:19.4.0")
-    "androidTestImplementation"("com.google.firebase:firebase-config:19.2.0")
-    "androidTestImplementation"("com.google.firebase:firebase-iid:20.3.0")
-    "androidTestImplementation"("com.google.firebase:firebase-firestore:21.7.1")
+    "androidTestImplementation"("com.google.firebase:firebase-core:18.0.0")
+    "androidTestImplementation"("com.google.firebase:firebase-auth:20.0.0")
+    "androidTestImplementation"("com.google.firebase:firebase-config:20.0.0")
+    "androidTestImplementation"("com.google.firebase:firebase-iid:21.0.0")
+    "androidTestImplementation"("com.google.firebase:firebase-firestore:22.0.0")
     "androidTestImplementation"("com.google.firebase:firebase-storage:19.2.0")
 }

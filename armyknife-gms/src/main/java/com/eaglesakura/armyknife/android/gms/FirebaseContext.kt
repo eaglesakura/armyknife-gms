@@ -18,13 +18,16 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GetTokenResult
 import com.google.firebase.iid.FirebaseInstanceId
 import com.google.firebase.iid.InstanceIdResult
+import com.google.firebase.installations.FirebaseInstallations
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigValue
 import java.io.Closeable
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -49,7 +52,8 @@ class FirebaseContext internal constructor(
     private val context: Context,
     private val name: String,
     @Suppress("MemberVisibilityCanBePrivate") val app: FirebaseApp?,
-    @Suppress("MemberVisibilityCanBePrivate") val instanceId: FirebaseInstanceId?,
+    @Suppress("MemberVisibilityCanBePrivate") val installations: FirebaseInstallations?,
+    @Deprecated("FirebaseInstanceId is deprecated") @Suppress("MemberVisibilityCanBePrivate") val instanceId: FirebaseInstanceId?,
     @Suppress("MemberVisibilityCanBePrivate") val auth: FirebaseAuth?,
     @Suppress("MemberVisibilityCanBePrivate") val remoteConfig: FirebaseRemoteConfig?
 ) : LiveData<FirebaseContextSnapshot>(), Closeable {
@@ -62,6 +66,8 @@ class FirebaseContext internal constructor(
         get() = (name == FirebaseApp.DEFAULT_APP_NAME)
 
     private val tag = "FirebaseContext($name)"
+
+    private val coroutineScope = CoroutineScope(Dispatchers.Main.immediate + Job())
 
     /**
      * Refresh FirebaseAuth token interval(milli seconds)
@@ -87,6 +93,11 @@ class FirebaseContext internal constructor(
     private var firebaseUser: FirebaseUser? = null
 
     private var instanceIdResult: InstanceIdResult? = null
+
+    /**
+     * FirebaseInstallation id.
+     */
+    private var installationId: String? = null
 
     private var authTokenResult: GetTokenResult? = null
 
@@ -135,6 +146,15 @@ class FirebaseContext internal constructor(
                 Log.d(tag, "no-dependencies(com.google.firebase:firebase-iid)")
             }
         }
+        if (installations != null) {
+            refreshInstallation(installations)
+        } else {
+            if (Firebase.linkInstallationsModule) {
+                Log.d(tag, "installed GMS(com.google.firebase:firebase-installations)")
+            } else {
+                Log.d(tag, "no-dependencies(com.google.firebase:firebase-installations)")
+            }
+        }
         snapshot()
     }
 
@@ -153,7 +173,7 @@ class FirebaseContext internal constructor(
      */
     override fun close() {
         synchronized(instances) {
-            app?.delete()
+            coroutineScope.cancel()
             instances.remove(name)
         }
     }
@@ -189,6 +209,31 @@ class FirebaseContext internal constructor(
     }
 
     @UiThread
+    private fun refreshInstallation(firebaseInstallations: FirebaseInstallations) {
+        coroutineScope.launch {
+            while (isActive) {
+                try {
+                    val installId = firebaseInstallations.id.awaitInCoroutines()
+                    if (!installId.isSuccessful) {
+                        throw installId.exception!!
+                    }
+                    withContext(Dispatchers.Main) {
+                        if (installId.isSuccessful) {
+                            this@FirebaseContext.installationId = installId.result!!
+                            snapshot()
+                        }
+                    }
+                    return@launch
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
+    @UiThread
     private fun refreshInstanceId(firebaseInstanceId: FirebaseInstanceId) {
         coroutineScope.launch {
             while (isActive) {
@@ -221,6 +266,7 @@ class FirebaseContext internal constructor(
         val snapshot = FirebaseContextSnapshot(
             user = firebaseUser,
             instanceId = instanceIdResult,
+            installationsId = installationId,
             userAuthToken = authTokenResult,
             remoteConfigValues = try {
                 Firebase.remoteConfig?.all?.toMap() ?: emptyMap()
@@ -330,6 +376,7 @@ class FirebaseContext internal constructor(
                         app = Firebase.app(name),
                         auth = Firebase.auth(name),
                         instanceId = Firebase.instanceId(name),
+                        installations = Firebase.installations(name),
                         remoteConfig = Firebase.remoteConfig(name)
                     )
                     instances[name] = firebaseContext

@@ -25,7 +25,13 @@ class FirebaseContextSnapshot internal constructor(
     /**
      * InstanceId snapshot.
      */
+    @Deprecated("FirebaseInstanceId is deprecated.")
     val instanceId: InstanceId?,
+
+    /**
+     * Firebase installation Id snapshot.
+     */
+    val installationsId: String?,
 
     /**
      * User authentication token.
