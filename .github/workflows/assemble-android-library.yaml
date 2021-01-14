@@ -62,7 +62,7 @@ jobs:
         if: ${{ always() }}
         uses: mikepenz/action-junit-report@v1
         with:
-          report_paths: '**/build/test-results/test/TEST-*.xml'
+          report_paths: '**/build/test-results/**/TEST-*.xml'
           github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: "android / publish / bintray"
         run: |
