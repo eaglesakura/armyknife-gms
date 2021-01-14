@@ -9,6 +9,7 @@ import com.eaglesakura.armyknife.android.junit4.extensions.instrumentationBlocki
 import com.eaglesakura.armyknife.android.junit4.extensions.targetApplication
 import com.eaglesakura.armyknife.android.junit4.extensions.testContext
 import com.eaglesakura.armyknife.runtime.Random
+import com.google.firebase.auth.ktx.auth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.yield
@@ -104,7 +105,7 @@ class FirebaseContextTest {
             Log.d("FirebaseContextTest", "$snapshot")
             Log.d(
                 "FirebaseContextTest",
-                "user.token='${snapshot.userAuthToken?.token}', instance.id='${snapshot?.instanceId?.id}', instance.token='${snapshot?.instanceId?.token}'"
+                "user.token='${snapshot.userAuthToken?.token}', installationId='${snapshot.installationsId}'"
             )
             Log.d(
                 "FirebaseContextTest",

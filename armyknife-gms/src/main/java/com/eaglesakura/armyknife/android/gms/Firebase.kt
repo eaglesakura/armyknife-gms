@@ -8,7 +8,6 @@ import com.google.firebase.FirebaseOptions
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.iid.FirebaseInstanceId
 import com.google.firebase.installations.FirebaseInstallations
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.storage.FirebaseStorage
@@ -99,43 +98,6 @@ object Firebase {
     val linkAppModule: Boolean by lazy {
         try {
             Log.d("Firebase", "${FirebaseApp::class.java.simpleName} is linking")
-            true
-        } catch (e: Throwable) {
-            false
-        }
-    }
-
-    /**
-     * get FirebaseInstanceId by name.
-     */
-    @Deprecated("FirebaseInstanceId is deprecated")
-    @Suppress("MemberVisibilityCanBePrivate")
-    fun instanceId(name: String): FirebaseInstanceId? {
-        return try {
-            FirebaseInstanceId.getInstance(app(name)!!)
-        } catch (e: Throwable) {
-            null
-        }
-    }
-
-    /**
-     * default Firebase instance ID
-     */
-    @Deprecated("FirebaseInstanceId is deprecated")
-    val instanceId: FirebaseInstanceId?
-        get() = try {
-            FirebaseInstanceId.getInstance(app!!)
-        } catch (e: Throwable) {
-            null
-        }
-
-    /**
-     * Linked module(firebase-iid)
-     */
-    @Deprecated("FirebaseInstanceId is deprecated")
-    val linkInstanceIdModule: Boolean by lazy {
-        try {
-            Log.d("Firebase", "${FirebaseInstanceId::class.java.simpleName} is linking")
             true
         } catch (e: Throwable) {
             false

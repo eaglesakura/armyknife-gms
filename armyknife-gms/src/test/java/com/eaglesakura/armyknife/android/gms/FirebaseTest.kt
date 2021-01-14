@@ -11,7 +11,6 @@ import com.eaglesakura.armyknife.android.junit4.extensions.localTest
 import com.eaglesakura.armyknife.android.junit4.extensions.testContext
 import com.eaglesakura.armyknife.runtime.extensions.send
 import com.google.firebase.FirebaseApp
-import com.google.firebase.iid.InstanceIdResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import org.junit.After
@@ -43,7 +42,7 @@ class FirebaseTest {
         assertTrue(Firebase.linkAppModule)
         assertTrue(Firebase.linkAuthModule)
         assertTrue(Firebase.linkFirestoreModule)
-        assertTrue(Firebase.linkInstanceIdModule)
+        assertTrue(Firebase.linkInstallationsModule)
         assertTrue(Firebase.linkRemoteConfigModule)
         assertTrue(Firebase.linkStorageModule)
         assertTrue(Firebase.linkAnalyticsModule)
@@ -59,7 +58,6 @@ class FirebaseTest {
             Firebase.storage(name = FirebaseApp.DEFAULT_APP_NAME),
             Firebase.storage(name = FirebaseApp.DEFAULT_APP_NAME)
         )
-        assertNotNull(Firebase.instanceId)
         assertNotNull(Firebase.remoteConfig)
     }
 
@@ -69,25 +67,7 @@ class FirebaseTest {
         assertNull(Firebase.auth)
         assertNull(Firebase.firestore)
         assertNull(Firebase.storage(name = FirebaseApp.DEFAULT_APP_NAME))
-        assertNull(Firebase.instanceId)
         assertNull(Firebase.remoteConfig)
-    }
-
-    @Test
-    fun getInstanceId() = instrumentationBlockingTest(Dispatchers.Main) {
-        val liveData = Firebase.instanceId!!.toLiveData()
-        val channel = Channel<InstanceIdResult>()
-        liveData.observeForever {
-            if (it != null) {
-                channel.send(Dispatchers.Main, it)
-            }
-        }
-
-        assertNotNull(
-            channel.receive().let {
-                Log.d(javaClass.simpleName, "InstanceId='${it.id}', Token='${it.token}'")
-            }
-        )
     }
 
     @Test

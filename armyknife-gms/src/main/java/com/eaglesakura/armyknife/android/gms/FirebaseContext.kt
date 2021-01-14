@@ -11,13 +11,10 @@ import com.eaglesakura.armyknife.android.extensions.assertUIThread
 import com.eaglesakura.armyknife.android.extensions.awaitInCoroutines
 import com.eaglesakura.armyknife.android.extensions.debugMode
 import com.eaglesakura.armyknife.android.extensions.runBlockingOnUiThread
-import com.eaglesakura.armyknife.android.gms.GooglePlayService.coroutineScope
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GetTokenResult
-import com.google.firebase.iid.FirebaseInstanceId
-import com.google.firebase.iid.InstanceIdResult
 import com.google.firebase.installations.FirebaseInstallations
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigValue
@@ -53,7 +50,6 @@ class FirebaseContext internal constructor(
     private val name: String,
     @Suppress("MemberVisibilityCanBePrivate") val app: FirebaseApp?,
     @Suppress("MemberVisibilityCanBePrivate") val installations: FirebaseInstallations?,
-    @Deprecated("FirebaseInstanceId is deprecated") @Suppress("MemberVisibilityCanBePrivate") val instanceId: FirebaseInstanceId?,
     @Suppress("MemberVisibilityCanBePrivate") val auth: FirebaseAuth?,
     @Suppress("MemberVisibilityCanBePrivate") val remoteConfig: FirebaseRemoteConfig?
 ) : LiveData<FirebaseContextSnapshot>(), Closeable {
@@ -91,8 +87,6 @@ class FirebaseContext internal constructor(
         }
 
     private var firebaseUser: FirebaseUser? = null
-
-    private var instanceIdResult: InstanceIdResult? = null
 
     /**
      * FirebaseInstallation id.
@@ -135,15 +129,6 @@ class FirebaseContext internal constructor(
                 Log.d(tag, "installed GMS(com.google.firebase:firebase-config)")
             } else {
                 Log.d(tag, "no-dependencies(com.google.firebase:firebase-config)")
-            }
-        }
-        if (instanceId != null) {
-            refreshInstanceId(instanceId)
-        } else {
-            if (Firebase.linkInstanceIdModule) {
-                Log.d(tag, "installed GMS(com.google.firebase:firebase-iid)")
-            } else {
-                Log.d(tag, "no-dependencies(com.google.firebase:firebase-iid)")
             }
         }
         if (installations != null) {
@@ -234,38 +219,11 @@ class FirebaseContext internal constructor(
     }
 
     @UiThread
-    private fun refreshInstanceId(firebaseInstanceId: FirebaseInstanceId) {
-        coroutineScope.launch {
-            while (isActive) {
-                try {
-                    val instanceId = firebaseInstanceId.instanceId.awaitInCoroutines()
-                    if (!instanceId.isSuccessful) {
-                        throw instanceId.exception!!
-                    }
-                    withContext(Dispatchers.Main) {
-                        if (instanceId.isSuccessful) {
-                            this@FirebaseContext.instanceIdResult = instanceId.result!!
-                            snapshot()
-                        }
-                    }
-
-                    return@launch
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }
-    }
-
-    @UiThread
     private fun snapshot() {
         assertUIThread()
 
         val snapshot = FirebaseContextSnapshot(
             user = firebaseUser,
-            instanceId = instanceIdResult,
             installationsId = installationId,
             userAuthToken = authTokenResult,
             remoteConfigValues = try {
@@ -375,7 +333,6 @@ class FirebaseContext internal constructor(
                         name = name,
                         app = Firebase.app(name),
                         auth = Firebase.auth(name),
-                        instanceId = Firebase.instanceId(name),
                         installations = Firebase.installations(name),
                         remoteConfig = Firebase.remoteConfig(name)
                     )
